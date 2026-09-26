@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!-- Benchmark launch for FLOAM: all parameters exposed as roslaunch args, no
+     rosbag play inside (the benchmark script plays the bag in its own tmux
+     pane) and no hector_trajectory_server (upstream uses it only for
+     ground-truth visualization).
+
+     The ROS clock is left as is (no use_sim_time): FLOAM stamps every output
+     with the input scan's header stamp and paces itself with std::chrono, so
+     its results are in bag time without it. Only its map to base_link TF is
+     stamped with ros::Time::now(), so RViz (floam_bench.rviz) runs with fixed
+     frame "map", where the /map cloud and /odom are published and need no
+     time-dependent TF lookup. That config is upstream's floam_mapping.rviz
+     without the camera image and hector trajectory displays, which have no
+     publisher here, plus an Odometry display. -->
+<launch>
+
+    <!-- Sensor / dataset parameters (scan_line must be 16, 32 or 64) -->
+    <arg name="scan_line"      default="16" />
+    <arg name="scan_period"    default="0.1" />
+    <arg name="vertical_angle" default="2.0" />
+    <arg name="max_dis"        default="90.0" />
+    <arg name="min_dis"        default="3.0" />
+    <arg name="map_resolution" default="0.4" />
+    <arg name="rviz"           default="true" />
+
+    <param name="scan_line"      value="$(arg scan_line)" />
+    <param name="scan_period"    value="$(arg scan_period)" />
+    <param name="vertical_angle" type="double" value="$(arg vertical_angle)" />
+    <param name="max_dis"        type="double" value="$(arg max_dis)" />
+    <param name="min_dis"        type="double" value="$(arg min_dis)" />
+    <param name="map_resolution" type="double" value="$(arg map_resolution)" />
+
+    <node pkg="floam" type="floam_laser_processing_node" name="floam_laser_processing_node" output="screen"/>
+    <node pkg="floam" type="floam_odom_estimation_node"  name="floam_odom_estimation_node"  output="screen"/>
+    <node pkg="floam" type="floam_laser_mapping_node"    name="floam_laser_mapping_node"    output="screen"/>
+
+    <node pkg="tf" type="static_transform_publisher" name="word2map_tf" args="0 0 0 0 0 0 /world /map 10" />
+
+    <group if="$(arg rviz)">
+        <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find floam)/rviz/floam_bench.rviz" />
+    </group>
+
+</launch>
