@@ -24,16 +24,24 @@ HDMAPPING_OUT_NAME="output_hdmapping"
 ODOM_TOPIC="${ODOM_TOPIC:-/odom}"
 CLOUD_TOPIC="${CLOUD_TOPIC:-/velodyne_points_filtered}"
 
-# FLOAM parameters (roslaunch args of floam_bench.launch).
-# FLOAM subscribes to /velodyne_points; a bag with a different LiDAR topic
-# name is remapped on rosbag play via LIDAR_TOPIC.
+# FLOAM parameters (roslaunch args of floam_bench.launch), defaults set for the
+# Bunker DVI dataset: Livox Mid-360 exported as sensor_msgs/PointCloud2 on
+# /livox/pointcloud in reg-1.bag-pc.bag (reg-1.bag holds the LiDAR only as a
+# Livox CustomMsg, which FLOAM cannot read).
+# FLOAM subscribes to /velodyne_points; the bag's LiDAR topic is remapped on
+# rosbag play via LIDAR_TOPIC.
 FLOAM_INPUT_TOPIC='/velodyne_points'
-LIDAR_TOPIC="${LIDAR_TOPIC:-$FLOAM_INPUT_TOPIC}"
+LIDAR_TOPIC="${LIDAR_TOPIC:-/livox/pointcloud}"
+# FLOAM supports only its 16/32/64-line models; for the Mid-360 the 16-line
+# model keeps the most points (the others reject more of its elevation range).
 SCAN_LINE="${SCAN_LINE:-16}"
 SCAN_PERIOD="${SCAN_PERIOD:-0.1}"
 VERTICAL_ANGLE="${VERTICAL_ANGLE:-2.0}"
 MAX_DIS="${MAX_DIS:-90.0}"
-MIN_DIS="${MIN_DIS:-3.0}"
+# FLOAM filters by HORIZONTAL distance; indoors most points are closer than
+# 3 m, so upstream's 3.0 would discard them. 0.5 = Mid-360 blind zone (also
+# FLOAM's own value in its live-sensor floam_velodyne.launch).
+MIN_DIS="${MIN_DIS:-0.5}"
 MAP_RESOLUTION="${MAP_RESOLUTION:-0.4}"
 
 # RViz on by default — the live view of how FLOAM tracks the dataset.
@@ -51,12 +59,12 @@ usage() {
   echo "If no arguments are provided, a GUI file selector will be used."
   echo
   echo "Environment variables:"
-  echo "  LIDAR_TOPIC    - LiDAR topic name inside the bag  (default: /velodyne_points)"
+  echo "  LIDAR_TOPIC    - LiDAR topic name inside the bag  (default: /livox/pointcloud)"
   echo "  SCAN_LINE      - number of LiDAR scan lines, 16|32|64 (default: 16)"
   echo "  SCAN_PERIOD    - scan period in seconds           (default: 0.1)"
   echo "  VERTICAL_ANGLE - vertical angle resolution [deg]  (default: 2.0)"
   echo "  MAX_DIS        - maximum point distance [m]       (default: 90.0)"
-  echo "  MIN_DIS        - minimum horizontal distance [m]  (default: 3.0)"
+  echo "  MIN_DIS        - minimum horizontal distance [m]  (default: 0.5)"
   echo "  MAP_RESOLUTION - map voxel resolution [m]         (default: 0.4)"
   echo "  ODOM_TOPIC     - FLOAM odometry output topic      (default: /odom)"
   echo "  CLOUD_TOPIC    - FLOAM filtered cloud topic       (default: /velodyne_points_filtered)"
