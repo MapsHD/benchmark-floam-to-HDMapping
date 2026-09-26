@@ -11,13 +11,13 @@
 # entire downsampled map each frame and is NOT recorded.
 
 IMAGE_NAME='floam_noetic'
-TMUX_SESSION='ros1_FLOAM'
+TMUX_SESSION='ros1_floam'
 
 DATASET_CONTAINER_PATH='/ros_ws/dataset/input.bag'
 CONVERTED_BAG_CONTAINER='/tmp/dataset_ros1.bag'
 BAG_OUTPUT_CONTAINER='/ros_ws/recordings'
 
-RECORDED_BAG_NAME="recorded-FLOAM.bag"
+RECORDED_BAG_NAME="recorded-floam.bag"
 HDMAPPING_OUT_NAME="output_hdmapping"
 
 # Recorded topics (used by the converter).
@@ -56,7 +56,7 @@ usage() {
   echo "  SCAN_PERIOD    - scan period in seconds           (default: 0.1)"
   echo "  VERTICAL_ANGLE - vertical angle resolution [deg]  (default: 2.0)"
   echo "  MAX_DIS        - maximum point distance [m]       (default: 90.0)"
-  echo "  MIN_DIS        - minimum point distance [m]       (default: 3.0)"
+  echo "  MIN_DIS        - minimum horizontal distance [m]  (default: 3.0)"
   echo "  MAP_RESOLUTION - map voxel resolution [m]         (default: 0.4)"
   echo "  ODOM_TOPIC     - FLOAM odometry output topic      (default: /odom)"
   echo "  CLOUD_TOPIC    - FLOAM filtered cloud topic       (default: /velodyne_points_filtered)"
@@ -163,6 +163,18 @@ docker run -it --rm \
     echo "[convert] ROS 1 bag ready at: $ROS1_BAG"
     ls -la $ROS1_BAG
 
+    # ── Preflight: FLOAM can only read a sensor_msgs/PointCloud2 LiDAR topic ─
+    # Without it FLOAM receives nothing and the run records no output.
+    if ! rosbag info "$ROS1_BAG" 2>/dev/null | grep -qE "[[:space:]]$LIDAR_TOPIC[[:space:]]+[0-9]+ msgs[[:space:]]+: sensor_msgs/PointCloud2"; then
+      echo "[preflight] ERROR: LiDAR topic $LIDAR_TOPIC (sensor_msgs/PointCloud2) not found in the bag."
+      echo "[preflight] PointCloud2 topics in this bag:"
+      rosbag info "$ROS1_BAG" 2>/dev/null | grep -E "msgs[[:space:]]+: sensor_msgs/PointCloud2" || echo "  (none)"
+      echo "[preflight] For the Bunker DVI dataset use reg-1.bag-pc.bag (LiDAR on /livox/pointcloud),"
+      echo "[preflight] or set LIDAR_TOPIC to the LiDAR PointCloud2 topic of your bag."
+      exit 42
+    fi
+    echo "[preflight] LiDAR topic $LIDAR_TOPIC found (sensor_msgs/PointCloud2)"
+
     # Topic remap arguments for rosbag play, if the bag uses a non-default name
     REMAP_ARGS=""
     if [[ "$LIDAR_TOPIC" != "$FLOAM_INPUT_TOPIC" ]]; then
@@ -261,9 +273,7 @@ sleep 3
 
 # Force-kill by process name
 echo "[control] force-killing remaining processes..."
-pkill -9 -f floam_laser_processing_node 2>/dev/null || true
-pkill -9 -f floam_odom_estimation_node  2>/dev/null || true
-pkill -9 -f floam_laser_mapping_node    2>/dev/null || true
+pkill -9 floam            2>/dev/null || true
 pkill -9 rviz             2>/dev/null || true
 pkill -9 rosmaster        2>/dev/null || true
 pkill -9 rosout           2>/dev/null || true
@@ -275,6 +285,13 @@ tmux kill-server
 
     tmux attach -t '"$TMUX_SESSION"'
   '
+
+# The preflight check failed: nothing was recorded, and converting would pick
+# up a stale recording from an earlier run.
+if [[ $? -eq 42 ]]; then
+  echo "=== ABORTED: input check failed, no conversion ==="
+  exit 1
+fi
 
 # ── Phase 2: convert recorded bag to HDMapping session ────────────────────────
 echo "=== Converting recorded bag to HDMapping session ==="
@@ -291,7 +308,7 @@ docker run -it --rm \
     source /ros_ws/devel/setup.bash
     rosrun floam_to_hdmapping listener \
       \"$BAG_OUTPUT_CONTAINER/$RECORDED_BAG_NAME\" \
-      \"$BAG_OUTPUT_CONTAINER/$HDMAPPING_OUT_NAME-FLOAM\" \
+      \"$BAG_OUTPUT_CONTAINER/$HDMAPPING_OUT_NAME-floam\" \
       \"$ODOM_TOPIC\" \
       \"$CLOUD_TOPIC\"
   "

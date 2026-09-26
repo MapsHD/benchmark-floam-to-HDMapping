@@ -59,8 +59,10 @@ COPY ./src/floam               ./src/floam
 COPY ./src/floam-to-hdmapping  ./src/floam-to-hdmapping
 
 # Benchmark launch (params as roslaunch args, no rosbag play / hector nodes)
-# added into the floam package.
+# and RViz config (fixed frame map, see floam_bench.launch) added into the
+# floam package.
 COPY ./overlay/launch/ ./src/floam/launch/
+COPY ./overlay/rviz/   ./src/floam/rviz/
 
 # Build FLOAM (3 nodes) and the converter. The final guard fails the image
 # build loudly if any executable is missing.

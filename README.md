@@ -1,12 +1,12 @@
 ## Hint
 
-Please change branch to [Bunker-DVI-Dataset-reg-1](https://github.com/MapsHD/benchmark-FLOAM-to-HDMapping/tree/Bunker-DVI-Dataset-reg-1) for quick experiment.
+Please change branch to [Bunker-DVI-Dataset-reg-1](https://github.com/MapsHD/benchmark-floam-to-HDMapping/tree/Bunker-DVI-Dataset-reg-1) for quick experiment.
 
 ## Example Dataset:
 
 Download the dataset from [Bunker DVI Dataset](https://charleshamesse.github.io/bunker-dvi-dataset/)
 
-# benchmark-FLOAM-to-HDMapping
+# benchmark-floam-to-HDMapping
 
 Runs the [FLOAM](https://github.com/wh200720041/floam) LiDAR odometry algorithm
 on a ROS 1 bag file and converts the output to an
@@ -27,8 +27,8 @@ is used. Scan lines are computed from each point's vertical angle, so plain
 ## Step 1 — Clone with submodules
 
 ```bash
-git clone https://github.com/MapsHD/benchmark-FLOAM-to-HDMapping.git --recursive
-cd benchmark-FLOAM-to-HDMapping
+git clone https://github.com/MapsHD/benchmark-floam-to-HDMapping.git --recursive
+cd benchmark-floam-to-HDMapping
 ```
 
 ## Step 2 — Build the Docker image
@@ -92,7 +92,7 @@ into the HDMapping session format.
 
 ## Step 4 — Open in HDMapping
 
-Output files appear in `<output_dir>/output_hdmapping-FLOAM/`:
+Output files appear in `<output_dir>/output_hdmapping-floam/`:
 
 ```
 lio_initial_poses.reg
